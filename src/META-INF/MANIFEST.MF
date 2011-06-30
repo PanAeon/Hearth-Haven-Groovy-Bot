@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+Ant-Version: Apache Ant 1.7.1
+Created-By: 16.3-b01 (Sun Microsystems Inc.)
+Main-Class: haven.MainFrame
+Class-Path: jogl.jar gluegen-rt.jar haven-res.jar antlr-2.7.7.jar groovy-1.7.5.jar asm-3.2.jar asm-analysis-3.2.jar asm-commons-3.2.jar asm-tree-3.2.jar asm-util-3.2.jar bsf-2.4.0.jar commons-cli-1.2.jar xstream-1.3.1.jar commons-logging-1.1.1.jar
+

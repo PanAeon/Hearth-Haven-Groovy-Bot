@@ -1,0 +1,7 @@
+<project name="Droid" default="copy" basedir=".">
+    <target name="copy">
+        <copy todir="d:/tmp/hh/scripts" overwrite="yes">
+           <fileset dir="droid"/>
+        </copy>
+    </target>
+</project>
