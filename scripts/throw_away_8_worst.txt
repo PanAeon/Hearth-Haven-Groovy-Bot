@@ -1,0 +1,13 @@
+int A = 0;
+int B = 8; // Сколько предметов выкинуть   
+while (A < B)
+{
+set_inventory("Cupboard");
+int wq = 1000; int wqx = 0; int wqy = 0;
+while (next_item())
+{ if (item_quality() < wq) { wq = item_quality(); wqx = item_coord_x(); wqy = item_coord_y(); } }
+int C = get_items_count();
+inventory("Cupboard",wqx,wqy,"drop");
+while(get_items_count() == C) { sleep(100); reset_inventory(); }
+A++;
+}

@@ -1,0 +1,529 @@
+int MOUSE_RIGHT_BUTTON = 3;
+int MOUSE_LEFT_BUTTON = 1;
+int NO_MOD = 0;
+int TRUE = 1;
+int FALSE = 0;
+int true = 1;
+int false = 0;
+
+int PIVOTAL_POINT_X = 9611101;
+int PIVOTAL_POINT_Y = 153466;
+
+int shift_direction=0;
+
+void main(){
+	map_move_step(0,0);
+	sleep(500);
+	open_inventory_window();
+	int door_id = input_get_object("select door please");
+	drop_frog();
+	int room_center_x = my_coord_x();
+	int room_center_y = my_coord_y();
+	pick_up_frog(room_center_x, room_center_y, door_id);
+	
+	
+	// set_inventory("boat");
+	// while(next_item()){print("*");}
+	// print(get_items_count());
+	// set_item_drag();
+	// item_drop(0, 0);
+	
+	
+	//open_inventory_window();
+	//go_back_to_pivotal_point();
+	//bug_tube_in_the_boat(3, -3);
+	
+	
+	// while(TRUE){
+		// check_and_fill_tube_with_water(3, -3);
+		// check_and_fill_tube_with_water(3, -2);
+		// check_and_fill_tube_with_water(3, -1);
+		// check_and_fill_tube_with_water(3, 0);
+		// check_and_fill_tube_with_water(3, 1);
+		
+		// check_and_fill_tube_with_water(1, 3);
+		// check_and_fill_tube_with_water(0, 3);
+		// check_and_fill_tube_with_water(-1, 3);
+		// check_and_fill_tube_with_water(-2, 3);
+		// check_and_fill_tube_with_water(-3, 3);
+		
+		// sleep(10000);
+	// }
+}
+
+void drop_frog(){
+	set_inventory("Inventory");
+	while(next_item()){
+		if(is_item_name("frog") && item_quality() == 10){
+			item_click("drop");
+			sleep(500);
+			break;
+		}
+	}
+}
+void shift_a_little_bit(){
+	if(shift_direction == 0){
+		map_move_step(-1,0);
+		
+	}
+	if(shift_direction == 1){
+		map_move_step(0,-1);
+		
+	}
+	if(shift_direction == 2){
+		map_move_step(1,0);
+	
+	}
+	if(shift_direction == 3){
+		map_move_step(0,1);
+	}
+	shift_direction = shift_direction + 1;
+	if(shift_direction >= 4){
+		shift_direction = 0;
+	}
+	wait_for_move();
+	
+}
+void pick_up_frog(int cx, int cy, int doorID){
+	
+	int count = 0;
+	while(true){
+		int frogID = 0;
+		do {
+			frogID = find_frog_id(doorID);
+			if(!frogID){
+				shift_a_little_bit();
+				if(successfully_has_catched_frog()){
+					count = count + 1;
+					print("count");
+					print(count);
+					map_abs_click(cx, cy, MOUSE_LEFT_BUTTON, NO_MOD);
+					wait_for_move();
+					drop_frog();
+				}
+			}
+		} while (!frogID);
+		sleep(100);
+		do_click(frogID,MOUSE_RIGHT_BUTTON, NO_MOD);
+		wait_for_move();
+		
+		if(successfully_has_catched_frog()){
+			count = count + 1;
+			print("count");
+			print(count);
+			map_abs_click(cx, cy, MOUSE_LEFT_BUTTON, NO_MOD);
+			wait_for_move();
+			drop_frog();
+		}
+	}
+	
+}
+
+int find_frog_id(int doorID){
+	int i = -3;
+	int j = -3;
+	int frogID = 0;
+	
+	// while ( i < 3){
+		// while (j < 3){
+			// frogID = find_map_object("", 5, i, j);
+			// if (frogID){
+				// print("-->");
+				// print(frogID);
+				// if (frogID != doorID){
+					// if (frogID != PlayerID){
+						// print("eurika");
+						// return frogID;
+					// }
+				// }
+			 // }
+			// j=j+1;
+		// }
+		// i=i+1;
+	// }
+	print(PlayerID);
+	for(i = -10; i < 10; i = i + 1){
+		 for(j = -7; j < 7; j = j + 1){
+			 frogID = find_map_object("", 8, i, j);
+			 print(frogID);
+			 if ((frogID != 0) && (frogID != doorID) && (frogID != PlayerID)){
+				break;
+			 }
+		 }
+		 if ((frogID != 0) && (frogID != doorID) && (frogID != PlayerID)){
+				break;
+			 }
+	}
+	return frogID;
+}
+
+void pick_up_frog_old(int cx, int cy, int doorID){
+	int frogID;
+	int cup1ID = input_get_object("select 1st cupboard please");
+	int cup2ID = input_get_object("select 2nd cupboard please");
+	int cup3ID = input_get_object("select 3rd cupboard please");
+	int count = 0;
+	while(true){
+	
+	if(my_coord_x() >= cx){
+		map_move_step(-11,0);
+		wait_for_move();
+		frogID = find_map_object("", 85,8,0);
+		if (frogID != doorID && frogID != cup1ID && frogID != cup2ID && frogID != cup3ID){
+			do_click(frogID,MOUSE_RIGHT_BUTTON, NO_MOD);
+			wait_for_move();
+		}
+		
+		if(successfully_has_catched_frog()){
+			count = count + 1;
+			print(count);
+			map_abs_click(cx, cy, MOUSE_LEFT_BUTTON, NO_MOD);
+			wait_for_move();
+			drop_frog();
+		}
+		
+		if(my_coord_y() >= cy){
+				map_move_step(0,-1);
+				wait_for_move();
+			}else {
+				map_move_step(0,1);
+				wait_for_move();
+		}
+		
+	}else {
+		map_move_step(11,0);
+		wait_for_move();
+		frogID = find_map_object("", 85,-8,0);
+		
+		if (frogID != doorID && frogID != cup1ID && frogID != cup2ID && frogID != cup3ID){
+			do_click(frogID,MOUSE_RIGHT_BUTTON, NO_MOD);
+			wait_for_move();
+		}
+		if(successfully_has_catched_frog()){
+			count = count + 1;
+			print(count);
+			map_abs_click(cx, cy, MOUSE_LEFT_BUTTON, NO_MOD);
+			wait_for_move();
+			drop_frog();
+		}
+		
+		if(my_coord_y() >= cy){
+				map_move_step(0,-1);
+				wait_for_move();
+			}else {
+				map_move_step(0,1);
+				wait_for_move();
+			}
+		
+	}
+	}
+	//int frogID = find_map_object("", 250,0,0);
+	print(frogID);
+	do_click(frogID,MOUSE_RIGHT_BUTTON, NO_MOD);
+	
+	
+	//find_object_by_type("", 2);
+	//int frogID =  input_get_object("click on toad");//find_map_object("toad", 17,0,0);
+	
+	//map_click(2, 0, MOUSE_RIGHT_BUTTON, NO_MOD);
+	
+	//wait_for_move();
+	//map_abs_click(9611102, 153468);
+	//void map_click(0, 0, MOUSE_RIGHT_BUTTON, NO_MOD);
+	//wait_for_move();
+}
+
+int successfully_has_catched_frog(){
+	set_inventory("Inventory");
+	while(next_item()){
+		if(is_item_name("frog")){
+			return true;
+		}
+	}
+	return false;
+}
+
+
+void bug_tube_in_the_boat(int x, int y){
+	
+	get_carry_cursor();
+	sleep(400);
+	int tubeID = find_map_object("ttub", 5, x, y);
+	
+	do_click(tubeID,MOUSE_LEFT_BUTTON, NO_MOD);
+	wait_for_move();
+	
+	sleep(1000);
+	go_back_to_pivotal_point();
+	
+	map_move_step(0,1);
+	wait_for_move();
+	
+	map_move_step(-3,0);
+	wait_for_move();
+	
+	int boatID = find_object_by_name("boat-1", 5);
+	do_click(boatID,MOUSE_RIGHT_BUTTON, NO_MOD);
+	wait_for_move();
+	//int tubeID = find_object_by_name("ttube",2);
+	//print(tubeID);
+	
+	
+	//map_click(x,y, MOUSE_LEFT_BUTTON,0);
+	//wait_for_move();
+	
+	//int tubeID = find_object_by_name("ttub",2);
+	//print(tubeID);
+	// map_interact_click(tubeID, NO_MOD);
+	// sleep(500);
+	//do_click(tubeID, MOUSE_LEFT_BUTTON, NO_MOD);
+	//do_click(tubeID, MOUSE_LEFT_BUTTON, NO_MOD);
+
+}
+
+void get_carry_cursor(){
+	send_action("carry");
+	do{
+		sleep(100);
+	} while(!is_cursor("chi"));
+	sleep(200);
+}
+
+
+void open_inventory_window(){
+	if(!have_inventory("Inventory")) open_inventory();        
+    while(!have_inventory("Inventory")) sleep(100);
+}
+void check_and_fill_tube_with_water(int x_offset, int y_offset){
+	if(is_tube_present_and_not_filled_with_water(x_offset, y_offset)){
+		fill_tube_with_water(x_offset, y_offset);
+	}
+}
+
+int is_tube_present_and_not_filled_with_water(int x_offset, int y_offset){
+	if(find_map_object("ttub", 5, x_offset, y_offset) 
+		&& !(find_map_object("ttubw", 5, x_offset, y_offset))
+		&& !(find_map_object("ttuba", 5, x_offset, y_offset))){
+		return TRUE;
+	}
+	
+	return FALSE;
+}
+
+void fill_tube_with_water(int x_offset, int y_offset){
+	int tubeID = find_map_object("ttub", 5, x_offset, y_offset);
+	map_move_step(x_offset, y_offset);
+	wait_for_move();
+	while(empty_backet(tubeID)){
+		go_back_to_pivotal_point();
+		fill_backet();
+		go_back_to_pivotal_point();
+		map_move_step(x_offset, y_offset);
+		wait_for_move();
+	}
+	go_back_to_pivotal_point();
+}
+
+void fill_backet(){
+	set_inventory("Inventory");
+	while(next_item()){
+		if(is_item_name("bucket")){
+			item_click("take");
+			sleep(100);
+			map_interact_click(find_Well_ID(), 0);
+			sleep(5000);
+			item_drop(0, 0);
+			sleep(400);
+			break;
+		}
+	}
+}
+
+int empty_backet(int tubeID){
+	set_inventory("Inventory");
+	sleep(150);
+	while(next_item()){
+		if(is_item_name("bucket-water")){
+			item_click("take");
+			sleep(150);
+			map_interact_click(tubeID, 0);
+			sleep(250);
+			item_drop(0, 0);
+			sleep(200);
+			break;
+		}
+	}
+	return is_backet_empty();
+}
+
+int is_backet_empty(){
+	set_inventory("Inventory");
+	while(next_item()){
+		if(is_item_name("bucket-water")){
+			return 0;
+		}
+	}
+	return 1;
+}
+
+void go_back_to_pivotal_point(){
+	map_abs_click(PIVOTAL_POINT_X, PIVOTAL_POINT_Y, MOUSE_LEFT_BUTTON, NO_MOD);
+	wait_for_move();
+}
+
+void open_lchest(){
+	int lchestID = find_object_by_name("lchest", 2);
+	do_click(lchestID, MOUSE_RIGHT_BUTTON, NO_MOD);
+	sleep(1000);
+}
+
+void eat_from_lchest(){
+	set_inventory("Chest");
+	while(next_item()){
+		item_click("iact");
+		wait_for_context_menu();
+		select_context_menu("Eat");
+		wait_for_HourGlass();
+		sleep(300);
+		break;
+		
+	}
+	sleep(1000);
+}
+
+void go_back(){
+	int doorID = find_object_by_name("cabin-door2m",10);
+	do_click(doorID, MOUSE_RIGHT_BUTTON, NO_MOD);
+	wait_for_move();
+	sleep(1000);
+	
+	map_move_step(0,1);
+	wait_for_move();
+	map_move_step(9,0);
+	wait_for_move();
+	map_move_step(0,-8);
+	wait_for_move();
+	map_move_step(3, 0);
+	wait_for_move();
+}
+int eat_from_cupboard(){
+	set_inventory("Cupboard");
+	while(next_item()){
+		item_click("iact");
+		wait_for_context_menu();
+		select_context_menu("Eat");
+		wait_for_HourGlass();
+		sleep(300);
+		break;
+		
+	}
+	sleep(1000);
+}
+
+void sit_on_chair(){
+    // not used!!!!
+	int chairID = find_object_by_name("chair",2);
+	do_click(chairID, MOUSE_RIGHT_BUTTON, NO_MOD);
+	sleep(1000);
+	int tableID = find_object_by_name("table",2);
+	do_click(tableID, MOUSE_RIGHT_BUTTON, NO_MOD);
+	sleep(1000);
+}
+void go_to_cupboard(){
+	map_move_step(-3, 0);
+	wait_for_move();
+	map_move_step(0,8);
+	wait_for_move();
+	map_move_step(-9,0);
+	wait_for_move();
+	int doorID = find_object_by_name("cabin-door2m",3);
+	do_click(doorID, MOUSE_RIGHT_BUTTON, NO_MOD);
+	wait_for_move();
+	sleep(100);
+	map_move_step(0, -4);
+	wait_for_move();
+	map_move_step(1, 0);
+	wait_for_move();
+	
+	int cupboardID = find_object_by_name("cupboard", 2);
+	do_click(cupboardID, MOUSE_RIGHT_BUTTON, NO_MOD);
+	sleep(1000);
+}
+
+
+void wait_for_move(){
+	sleep(500);
+	while(Moving){
+		sleep(10);
+	}
+}
+
+/*************************************************************************************/
+
+
+
+/*************************************************************************************/
+
+void dig_current_tile(){
+	do{
+		send_action("plow");
+		sleep(100);
+	} while(!is_cursor("dig"));
+	
+	int x = my_coord_x();
+	int y = my_coord_y();
+	map_abs_click(x, y, MOUSE_LEFT_BUTTON, 0);
+	wait_for_HourGlass();
+}
+
+void wait_for_HourGlass(){
+	do {
+		sleep(100);
+	}while(HourGlass);
+}
+
+void clear_cursor(){
+	map_click(25, 50, MOUSE_RIGHT_BUTTON, 0);
+}
+
+void drink_water(){
+
+	// int isInventoryOpen = have_inventory("Inventory");
+	// if (!isInventoryOpen){
+		// open_inventory();
+	// }
+	set_inventory("Inventory");
+
+	do{
+		if(is_item_name("waterflask")){
+			item_click("take");
+			sleep(100);
+			map_interact_click(find_Well_ID(), 0);
+			sleep(5000);
+			item_drop(0, 0);
+			sleep(200);
+			break;
+		}
+	} while(next_item());
+	
+	set_inventory("Inventory");
+
+	do{
+		if(is_item_name("waterflask")){
+			item_click("iact");
+			wait_for_context_menu();
+			select_context_menu("Drink");
+			wait_for_HourGlass();
+		}
+	} while(next_item());
+}
+
+int find_Well_ID(){
+	return find_object_by_name("well",5);
+}
+
+void wait_for_context_menu(){
+	do{
+		sleep(25);
+	}while(!ContextMenuReady);
+}

@@ -1,0 +1,13 @@
+#include <sys>
+
+void main(){
+   open_inventory_window();
+   int cupboardID = find_object_by_name("cupboard", 2);
+   set_inventory("Cupboard");
+   while(!have_inventory("Cupboard")) sleep(100);
+   while(next_item()){
+		item_click("transfer");
+		sleep(400);
+   }
+   
+}

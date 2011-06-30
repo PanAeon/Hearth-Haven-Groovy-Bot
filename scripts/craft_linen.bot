@@ -1,0 +1,88 @@
+#include <sys>
+
+int CHEST_ID = 0;
+int LOOM_ID = 0;
+
+
+void main(){
+	
+	open_inventory_window();
+	CHEST_ID = input_get_object("select chest, please");
+	sleep(400);
+	LOOM_ID = input_get_object("select loom, please");
+	sleep(400);
+	
+	
+	take_fibre_from_chest();
+	
+	do_click(LOOM_ID, MOUSE_RIGHT_BUTTON, NO_MOD);
+	wait_move();
+	sleep(200);
+	send_action("craft","linencloth");
+	
+	wait_craft_window();
+	sleep(200);
+	craft(1);
+	wait_hourglass();
+	
+	put_everything_to_the_chest();
+	
+}
+
+
+void take_fibre_from_chest(){
+	do_click(CHEST_ID, MOUSE_RIGHT_BUTTON, NO_MOD);
+    wait_move();
+	
+	set_inventory("Inventory");
+	int i = 0;
+	
+	set_inventory("Chest");
+	
+	while (next_item()){
+        if (is_item_name("flaxfibre")) {
+			if (i < 5){
+				item_click("transfer");
+				sleep(100);
+				i++;
+			}
+        }
+    }
+}
+
+void put_everything_to_the_chest(){
+	do_click(CHEST_ID, MOUSE_RIGHT_BUTTON, NO_MOD);
+    wait_move();
+	
+    set_inventory("Inventory");
+	
+	while (next_item()){
+        item_click("transfer");
+        sleep(100);
+    }
+}
+
+ void wait_craft_window(){
+	 int craftReady = 0;
+	 do {
+		 sleep(100);
+		 craftReady = check_craft("Linen Cloth");
+	 } while(craftReady != 1);
+ }
+ 
+ void wait_for_end_of_crafting(){
+	set_inventory("Inventory");
+	int first_amount = get_items_count();
+	int amount = first_amount;
+	reset_inventory();
+	if (amount){
+		do {
+			sleep(1000);
+			reset_inventory();
+			amount = get_items_count();
+		} while (first_amount == amount);
+	}
+
+ }
+ 
+

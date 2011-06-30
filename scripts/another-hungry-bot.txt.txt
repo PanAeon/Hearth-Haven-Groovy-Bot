@@ -1,0 +1,27 @@
+    #include <sys>
+
+    void main()
+    {
+    if(!have_inventory("Inventory")) open_inventory();        
+    while(!have_inventory("Inventory")) sleep(100);
+    set_inventory("Inventory")
+    while(Hungry > 60)
+    {
+    inventory("Inventory",0,0,"take"); wait_drag();
+    set_item_drag();
+    if(!is_item_name("water")) {
+    map_interact_click(find_object_by_name("well",3),0);
+    while (!is_item_name("water")) sleep(100);
+    }
+    inventory("Inventory",5,3,"itemact"); sleep(1000);
+    item_drop(0,0); wait_drop();
+    inventory("Inventory",5,3,"iact"); wait_context_menu();
+    select_context_menu("Drink"); wait_hourglass();
+    send_action("plow"); wait_dig_cursor();
+    map_click(0,0,1,0); wait_hourglass();
+    send_action("plow"); wait_dig_cursor();
+    map_click(0,0,1,0); wait_hourglass();
+    send_action("plow"); wait_dig_cursor();
+    map_click(0,0,1,0); wait_hourglass();
+    }
+    }

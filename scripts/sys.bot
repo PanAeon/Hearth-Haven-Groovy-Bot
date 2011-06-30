@@ -1,0 +1,70 @@
+
+int MOUSE_RIGHT_BUTTON = 3;
+int MOUSE_LEFT_BUTTON = 1;
+int NO_MOD = 0;
+int MOD_SHIFT = 1;
+int TRUE = 1;
+int FALSE = 0;
+int true = 1;
+int false = 0;
+
+int NORTH_WEST = -1;
+int SOUTH_EAST = 1;
+int NORTH_EAST = -1;
+int SOUTH_WEST = 1;
+
+void wait_context_menu()    { while (!ContextMenuReady) sleep(100); }
+void wait_context_menu_off()    { while (ContextMenuReady) sleep(100); }
+void wait_begin_move()       { while(!Moving) sleep(100); }
+void wait_end_move()       { while(Moving) sleep(100); }
+void wait_move()          { 
+   while (1) {
+      wait_begin_move();
+      wait_end_move();
+      sleep(500);
+      if (!Moving) break;
+   }
+}
+void wait_chi_cursor()       { while(!is_cursor("chi")) sleep(100); }
+void wait_dig_cursor()       { while(!is_cursor("dig")) sleep(100); }
+void wait_arw_cursor()       { while(!is_cursor("arw")) sleep(100); }
+void wait_harvest_cursor()    { while(!is_cursor("harvest")) sleep(100); }
+void wait_hourglass_on()    { while(!HourGlass) sleep(100); }
+void wait_hourglass_off()    { while(HourGlass) sleep(100); }
+void wait_hourglass() {
+   while (1) {
+      wait_hourglass_on();
+      wait_hourglass_off();
+      sleep(1000);
+      if (!HourGlass) break;
+   }
+}
+void wait_drop()          { while(DraggingItem) sleep(100); }
+void wait_drag()          { while(!DraggingItem) sleep(100); }
+
+void select_harvest_cursor(){
+	if (!is_cursor("harvest")) {
+		send_action("harvest");
+		wait_harvest_cursor();
+	}
+}
+
+void reset_cursor() {
+   if (!is_cursor("arw")) {
+      map_click(0,0,MOUSE_RIGHT_BUTTON,NO_MOD);
+      wait_arw_cursor();
+   }
+}
+
+void open_inventory_window(){
+	if(!have_inventory("Inventory")) open_inventory();        
+    while(!have_inventory("Inventory")) sleep(100);
+}
+
+void wait_for_move(){
+   sleep(500);
+   do{
+		sleep(100);
+   } while(Moving);
+}
+

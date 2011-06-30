@@ -1,0 +1,183 @@
+#include <sys>
+
+/*
+* Скрипт для проведения автоматической селекции семян
+* Описание:
+* Задается прямоугольник переменными HIGHT и WIDTH (с юга на север и с востока на запад соответственно).
+* Старт в юго-восточном углу вне будущего поля, чарик делает шаг на запад и начинает сажать.
+* На 167й строке надо вписать название семян
+*
+* Условия:
+* 1. Семяна расфасованы в сумки, сумки в инвентаре (семяна не в сумке игнорируются)
+* 2. Инвентарь открыт, все сумки закрыты (обязательно закрыты!)
+* 3. Земля должна быть вскопана, клетки где не удается посадить семеня пропускаются
+* 4. Расчитано не более чем для 30 сумок
+*/
+
+//int INVENTORY = 30;
+int HIGHT = 6;
+int WIDTH = 6;
+
+int seedQ[1350]; // 30*9*5
+
+int masInd = 0;
+
+/*
+* Методы для работы с массивом
+* Каждая запись содержит координаты сумки в инвентаре, координаты семечки в сумке и квалити семечки
+*
+*/
+void putSeed(int b_x, int b_y, int s_x, int s_y, int s_q){
+   seedQ[masInd] = b_x;
+   seedQ[masInd+1] = b_y;
+   seedQ[masInd+2] = s_x;
+   seedQ[masInd+3] = s_y;
+   seedQ[masInd+4] = s_q;
+   masInd = masInd + 5;
+}
+
+int getBX(int ind){
+   return seedQ[ind*5];
+}
+
+int getBY(int ind){
+   return seedQ[ind*5+1];
+}
+
+int getSX(int ind){
+   return seedQ[ind*5+2];
+}
+
+int getSY(int ind){
+   return seedQ[ind*5+3];
+}
+
+int getSQ(int ind){
+   return seedQ[ind*5+4];
+}
+
+int removeSeed(int ind){
+   if (seedQ[ind*5+4] < 1)
+      return 0;
+   seedQ[ind*5+4] = -1;
+   return 1;
+}
+
+/*
+* Выдает индекс массива, где записаны данные о лучшем из имеющихся семян
+*/
+int findBestSeed(){
+   int bestQ = -1;
+   int bestInd = -1;
+   for (int i = 0; i < masInd/5; i++){
+      if (getSQ(i)>bestQ){
+         bestQ = getSQ(i);
+         bestInd = i;
+      }
+   }
+//   print(bestQ);
+//   print(bestInd);
+   return bestInd;
+}
+
+/*
+* Сажаем лучшее семечко под ноги
+*/
+void plantSeed(){
+   int ind = findBestSeed();
+   if (ind < 0) {exit();}
+   set_inventory("Inventory");
+   inventory("Inventory", getBX(ind), getBY(ind), "iact");
+   while(!have_inventory("Seedbag")) sleep(200);
+   if (set_inventory("Seedbag")){
+      inventory("Seedbag", getSX(ind), getSY(ind), "take");
+      wait_drag();
+      map_interact_click(0, 0, 0);
+      sleep(1000);
+   }
+   // если не удалось посадить семечко, кладем откуда вdвзяли
+   // иначе удаляем данные о нем из массива
+   if (DraggingItem){
+      item_drop_to_inventory("Seedbag", getSX(ind), getSY(ind));
+      sleep(300);
+   } else {
+      removeSeed(ind);
+   }
+
+   set_inventory("Inventory");
+   closeBag(getBX(ind), getBY(ind));
+}
+
+/*
+* Совершаем обход заданного прямоугольника и сажаем семена
+*/
+void plant(){
+   int direction = 1;
+   for (int w = 0; w < WIDTH; w++){
+      map_move_step(-1, 0);
+      wait_move();
+      plantSeed();
+      direction = direction*(-1);
+      for (int h = 1; h < HIGHT; h++){
+         map_move_step(0, direction);
+         wait_move();
+         plantSeed();
+      }
+   }
+}
+
+/*
+* Закрывает Seedbag выкидывая его на землю и тут же подбирая
+*/
+void closeBag(int x, int y){
+   inventory("Inventory", x, y, "drop");
+   while(find_object_by_name("bag-seed", 2)==0){sleep(200);}
+   do_click(find_object_by_name("bag-seed", 2), 3, 0);
+   while(find_object_by_name("bag-seed", 2)!=0){sleep(200);}
+}
+
+/*
+* Метод заполняет массив с координатами мешочков, семечек в мешочке и квалити семечки.
+* Сначала запоминаются позиции не пустых мешочков, потом каждый открывается и проверются семечки.
+*/
+void cataloging(){
+   int iter = 0;
+   int iter_tmp = 0;
+   int bags[60]; // INVENTORY
+   int bagsCount = 0;
+   if (set_inventory("Inventory")) {
+      while (next_item()) {
+         if (is_item_name("bag-seed-f")) {
+            bags[iter] = item_coord_x();
+            bags[iter+1] = item_coord_y();
+//            print("seed bag");
+//            print(bags[iter]);
+//            print(bags[iter+1]);
+            iter = iter + 2;
+            bagsCount++;
+         }
+      }
+   }
+   iter = 0;
+   for(int i =0; i < bagsCount; i++){
+      inventory("Inventory", bags[2*i], bags[2*i+1], "iact");
+      while(!have_inventory("Seedbag")) sleep(200);
+      if (set_inventory("Seedbag")){
+         while(next_item()){
+//            if (is_item_name("seed-wheat")){
+//            if (is_item_name("flaxseed")){
+            if (is_item_name("seed-grape")){
+               //print(item_quality());
+               putSeed(bags[2*i], bags[2*i+1], item_coord_x(), item_coord_y(), item_quality());
+            }
+         }
+      }
+      set_inventory("Inventory");
+      closeBag(bags[2*i], bags[2*i+1]);
+   }
+}
+
+void main(){
+   cataloging();
+   plant();
+}

@@ -1,0 +1,376 @@
+/*
+	Merry Farmer Bot 0.1
+	
+	User Actions:
+		1) Select Chest at the begining
+		2) Select Looting machine at the begining
+	
+	Assumptions:
+		1) At the begining char stands at the left up corner of the field. [Ground zero]
+		2) For now: field is 5x5
+		3) We're working with Flax
+		4) Inventory size is 16
+		
+	Coords:
+			____________________
+		   |      |      |      |
+		   | -X   |      |  -Y  |
+		   |______|______|______|
+		   |      |      |      |
+		   |      |   *  |      |
+		   |______|______|______|
+		   |      |      |      |
+		   | +Y   |      |  +X  |
+		   |______|______|______|
+*/
+
+#include <sys>
+
+int FIELD_HEIGHT = 5;
+int FIELD_LENGHT = 5;
+
+int FLOWER_STAGE = 3;
+
+int INVENTORY_SIZE = 16;
+
+int CHEST_ID = 0;
+int LOOTING_MACHINE_ID = 0;
+
+// really global variables I haven't used them for ages)))
+int seed_x = 0
+int seed_y = 0;
+
+void main(){
+	open_inventory_window();
+	CHEST_ID = input_get_object("select chest, please");
+	LOOTING_MACHINE_ID = input_get_object("select looting machine, please");
+	//seed();
+	//harvest();
+	//take_up_fibres();
+	seed();
+}
+
+
+/*--------------------------------------------------------------
+|                                                               |
+|     Harvesting of Sorrow                                      |
+|                                                               |
+---------------------------------------------------------------*/
+
+/*
+ * Collects harvest from one tile if 
+ * there's something on it, and
+ * stage of this something >= {FLOWER_STAGE}
+ * @Params: x,y - relative coordinates of tile
+ * @Returns: 1 if something was harvested and 0 otherwise
+ */
+int harvest_one_tile(int x, int y){
+	int id = 0;
+    int stage = 0;
+    int processed = 0;
+	
+	id = find_map_object("", 2, x,y);
+	
+	if (id > 0) {
+		stage = get_object_blob(id, 0);
+		
+		if (stage >= FLOWER_STAGE){
+			select_harvest_cursor();
+			// собираем урожай
+			do_click(id, MOUSE_LEFT_BUTTON, NO_MOD);
+			if ((x !=0) || (y != 0))
+				wait_move();
+			wait_hourglass();
+			reset_cursor();
+			return 1;
+		}
+	}
+	
+	return 0;
+}
+
+/*
+ * Go for each square in the field
+ * and collect harvest.
+ *
+ */
+ 
+void harvest(){
+	int i = 0;
+	int j = 0;
+	for ( j = 0; j < FIELD_HEIGHT; j++){
+		for( i = 0; i < FIELD_LENGHT; i++){
+			int result = harvest_one_tile(-1, 0);
+			if(result){
+				if (is_inventory_full()){
+					put_seeds_to_the_chest_and_come_back();
+				}
+			} else {
+				map_move_step(-1,0); wait_move();
+			}
+		}
+		map_move_step(FIELD_LENGHT,0); wait_move();
+		map_move_step(0,1); wait_move();
+	}
+	
+	map_move_step(0,-FIELD_HEIGHT);
+}
+
+void take_up_fibres() {
+	int i = 0;
+	int j = 0;
+	for ( j = 0; j < FIELD_HEIGHT; j++){
+		for( i = 0; i < FIELD_LENGHT; i++){
+			int id = find_map_object("flaxfibre", 2, -1,0);
+			if (id > 0) {
+				do_click(id,MOUSE_RIGHT_BUTTON,0);
+				wait_move();
+				
+				if (is_inventory_full()){
+					put_fibres_to_the_chest_and_come_back();
+				}
+			} else {
+				map_move_step(-1,0);
+				wait_move();
+			}
+		}
+		map_move_step(FIELD_LENGHT,0); wait_move();
+		map_move_step(0,1); wait_move();
+	}
+	
+	map_move_step(0,-FIELD_HEIGHT);
+}
+/*--------------------------------------------------------------
+|                                                               |
+|     Planting                                                  |
+|                                                               |
+---------------------------------------------------------------*/
+
+void seed(){
+	int i = 0;
+	int j = 0;
+	for ( j = 0; j < FIELD_HEIGHT; j++){
+		for( i = 0; i < FIELD_LENGHT; i++){
+			int result = seed_one_tile(-1, 0);
+			if(result){
+				if (is_inventory_empty()){
+					take_more_seeds_from_the_chest_and_come_back();
+				}
+			} else {
+				map_move_step(-1,0); wait_move();
+			}
+		}
+		map_move_step(FIELD_LENGHT,0); wait_move();
+		map_move_step(0,1); wait_move();
+	}
+	
+	map_move_step(0,-FIELD_HEIGHT);
+}
+
+int seed_one_tile(int x, int y){
+	int id = 0;
+	
+	id = find_map_object("flax", 2, x,y);
+	
+	if (!id) {
+		if (!DraggingItem)
+			take_seed();
+			
+		// сажаем
+		map_interact_click(x,y, NO_MOD);
+		// если сажаем под собой то никуда не побежим - просто ждем
+		if (x == 0 && y == 0)
+			sleep(500);
+		else
+			wait_move();
+		sleep(400);
+		if (DraggingItem){
+			drop_seed();
+			return 0;
+		}
+		return 1;
+	}
+	
+	if (x != 0 || y != 0) {
+		if (DraggingItem) {
+			drop_seed();
+		}
+    }
+	return 0;
+}
+
+
+/*--------------------------------------------------------------
+|                                                               |
+|     Helpers                                     |
+|                                                               |
+---------------------------------------------------------------*/
+
+/*
+ * Check for full inventory.
+ *
+ */
+int is_inventory_full(){
+	set_inventory("Inventory");
+	if(get_items_count() >= (INVENTORY_SIZE - 1)){
+		return true;
+	}
+	return false;
+}
+
+int is_inventory_empty(){
+	int count = 0;
+	set_inventory("Inventory");
+	while(next_item()){
+		  if (is_item_name("flaxseed")){
+			count++;
+		  }
+	}
+	
+	if (count){
+		return false;
+	}
+	return true;
+}
+
+void take_seed() {
+      // ищем нужное семечко
+      if (set_inventory("Inventory")) {
+         while (next_item()) {
+            // берем в руки нужное семечко из инвентаря
+            if (is_item_name("flaxseed")) {
+               seed_x = item_coord_x();
+               seed_y = item_coord_y();
+               item_click("take");
+               wait_drag();
+               break;
+            }
+         }
+      }
+}
+
+void drop_seed() {
+            item_drop_to_inventory("Inventory", seed_x, seed_y);
+            wait_drop();
+}
+
+void put_seeds_to_the_chest_and_come_back(){
+
+	int prev_x = my_coord_x();
+	int prev_y = my_coord_y();
+	
+	do_click(CHEST_ID, MOUSE_RIGHT_BUTTON, NO_MOD);
+    wait_move();
+	
+	throw_away_worst_half_of_inventory();
+	
+    set_inventory("Inventory");
+	
+	while (next_item()){
+        if (is_item_name("flaxseed")) {
+            item_click("transfer");
+            sleep(100);
+        }
+    }
+	
+	map_abs_click(prev_x, prev_y, MOUSE_LEFT_BUTTON, NO_MOD);
+	wait_move();
+}
+
+void put_fibres_to_the_chest_and_come_back(){
+	int prev_x = my_coord_x();
+	int prev_y = my_coord_y();
+	
+	do_click(CHEST_ID, MOUSE_RIGHT_BUTTON, NO_MOD);
+    wait_move();
+	
+	//throw_away_worst_half_of_inventory();
+	
+    set_inventory("Inventory");
+	
+	while (next_item()){
+        if (is_item_name("flaxfibre")) {
+            item_click("transfer");
+            sleep(100);
+        }
+    }
+	
+	map_abs_click(prev_x, prev_y, MOUSE_LEFT_BUTTON, NO_MOD);
+	wait_move();
+}
+void take_more_seeds_from_the_chest_and_come_back(){
+	int prev_x = my_coord_x();
+	int prev_y = my_coord_y();
+	
+	do_click(CHEST_ID, MOUSE_RIGHT_BUTTON, NO_MOD);
+    wait_move();
+	
+	set_inventory("Inventory");
+	int capacity = INVENTORY_SIZE - get_items_count();
+	
+	set_inventory("Chest");
+	
+	
+	while (next_item()){
+        if (is_item_name("flaxseed")) {
+			if (capacity > 0){
+				item_click("transfer");
+				sleep(100);
+				capacity--;
+			}
+        }
+    }
+	
+	map_abs_click(prev_x, prev_y, MOUSE_LEFT_BUTTON, NO_MOD);
+	wait_move();
+}
+
+void throw_away_worst_half_of_chest(){
+	int A = 0;
+	int B = 15; // Сколько предметов выкинуть   
+	while (A < B){
+		set_inventory("Chest");
+		int wq = 1000; 
+		int wqx = 0; 
+		int wqy = 0;
+		
+		while (next_item()){
+			if (is_item_name() == "flax_seed"){
+				if (item_quality() < wq){ 
+					wq = item_quality(); 
+					wqx = item_coord_x(); 
+					wqy = item_coord_y(); 
+				} 
+			}
+		}
+		int C = get_items_count();
+		inventory("Chest",wqx,wqy,"drop");
+		while(get_items_count() == C) { sleep(100); reset_inventory(); }
+		A++;
+	}
+}
+
+void throw_away_worst_half_of_inventory(){
+	int A = 0;
+	int B = 2; // Сколько предметов выкинуть   
+	while (A < B){
+		set_inventory("Inventory");
+		int wq = 1000; 
+		int wqx = 0; 
+		int wqy = 0;
+		
+		while (next_item()){
+			if (item_name() == "flax_seed"){
+				if (item_quality() < wq){ 
+					wq = item_quality(); 
+					wqx = item_coord_x(); 
+					wqy = item_coord_y(); 
+				} 
+			}
+		}
+		int C = get_items_count();
+		inventory("Inventory",wqx,wqy,"drop");
+		while(get_items_count() == C) { sleep(100); reset_inventory(); }
+		A++;
+	}
+}

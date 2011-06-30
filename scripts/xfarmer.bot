@@ -1,0 +1,520 @@
+
+#include <sys>
+
+
+/**
+	Coords:
+			____________________
+		   |      |      |      |
+		   | -X   |      |  -Y  |
+		   |______|______|______|
+		   |      |      |      |
+		   |      |   *  |      |
+		   |______|______|______|
+		   |      |      |      |
+		   | +Y   |      |  +X  |
+		   |______|______|______|
+		   
+*/
+
+
+int FIELD_SIZE_X = 7;
+
+int FIELD_SIZE_Y = 3;
+
+int FLOWER_STAGE = 3;
+
+int CHEST_ID = 0;
+
+int PLOUGH_ID = 0;
+
+int INVENTORY_SIZE = 16;
+
+int seed_x = 0;
+int seed_y = 0;
+
+void main() {
+
+	map_move_step(0,0);
+	sleep(1000);
+	
+	open_inventory_window();
+	CHEST_ID = input_get_object("select chest, please");
+	sleep(400);
+	PLOUGH_ID = input_get_object("select plough, please");
+	
+	if(field_has_ripe_crops()){
+		harvest_field();
+	}
+	
+	if(there_are_fibres()){
+		collect_fibres();
+	}
+	
+	 if (planting_is_needed()){
+		 plough_field();
+		 plant_field();
+	 }
+	
+}
+
+/** ===============================================================================================
+
+						    .oO Harvesting of Sorrow  Oo.
+							
+   ===============================================================================================*/
+
+void harvest_field(){
+	int i = 0;
+	int j = 0;
+	int flaxID = 0;
+
+	int MY_OFFSET_X = 0;
+	int MY_OFFSET_Y = 0;
+
+	for (i = 0; i < FIELD_SIZE_X; i++) {
+		for(j = 0; j < FIELD_SIZE_Y; j++){
+			flaxID = is_tile_flax_and_ready_to_be_harvested(-i - MY_OFFSET_X, j - MY_OFFSET_Y);
+			if(flaxID){
+				// actual harvest
+				do_harvest_one_tile(flaxID, i, j);
+				
+				if (is_inventory_full()){
+					put_seeds_to_the_chest_and_come_back();
+				}
+				
+				MY_OFFSET_X =  -i;
+				MY_OFFSET_Y =  j;
+			}
+		}
+	}
+	
+	// go back
+	map_move_step(-MY_OFFSET_X, -MY_OFFSET_Y);
+	wait_for_move();
+}
+
+void do_harvest_one_tile(int id, int x, int y){
+	// собираем урожай
+	select_harvest_cursor();		
+	do_click(id, MOUSE_LEFT_BUTTON, NO_MOD);
+	if ((x !=0) || (y != 0))
+		wait_move();
+	wait_hourglass();
+	reset_cursor();
+}
+
+int field_has_ripe_crops(){
+	int i = 0;
+	int j = 0;
+	int flaxID = 0;
+
+	int MY_OFFSET_X = 0;
+	int MY_OFFSET_Y = 0;
+	
+	int flax_not_found_yet = 1;
+
+	for (i = 0; i < FIELD_SIZE_X && flax_not_found_yet; i++) {
+		for(j = 0; j < FIELD_SIZE_Y && flax_not_found_yet; j++){
+			flaxID = is_tile_flax_and_ready_to_be_harvested(-i, j);
+			if(flaxID){ 
+				flax_not_found_yet = false; 
+			}
+		}
+	}
+	return flaxID;
+}
+
+int is_tile_flax_and_ready_to_be_harvested(int x, int y){
+	int id = find_map_object("flax", 2, x,y);
+	if(id) {
+		int stage = get_object_blob(id, 0);
+		if (stage >= FLOWER_STAGE) {
+			return id;
+		}
+	}
+	return 0;
+}
+
+/** ===============================================================================================
+
+						    .oO Straw Business  Oo.
+							
+   ===============================================================================================*/
+   
+void collect_fibres(){
+	int i = 0;
+	int j = 0;
+	int strawID = 0;
+
+	int MY_OFFSET_X = 0;
+	int MY_OFFSET_Y = 0;
+
+	for (i = 0; i < FIELD_SIZE_X; i++) {
+		for(j = 0; j < FIELD_SIZE_Y; j++){
+			strawID = find_map_object("flaxfibre", 2, -i - MY_OFFSET_X, j - MY_OFFSET_Y);
+			if(strawID){
+				// actual harvest
+				do_collect_fibre(strawID, i, j);
+				
+				if (is_inventory_full()){
+					put_fibres_to_the_chest_and_come_back();
+				}
+				
+				MY_OFFSET_X =  -i;
+				MY_OFFSET_Y =  j;
+			}
+		}
+	}
+	
+	// go back
+	map_move_step(-MY_OFFSET_X, -MY_OFFSET_Y);
+	wait_for_move();
+}
+
+void there_are_fibres(){
+	int i = 0;
+	int j = 0;
+	int strawID = 0;
+
+	int fibres_not_found_yet = 1;
+	for (i = 0; i < FIELD_SIZE_X && fibres_not_found_yet; i++) {
+		for(j = 0; j < FIELD_SIZE_Y && fibres_not_found_yet; j++){
+			strawID = find_map_object("flaxfibre", 2, -i, j);
+			if(strawID){
+				fibres_not_found_yet = false;
+			}
+		}
+	}
+	return strawID;
+}
+
+void do_collect_fibre(int strawID, int x, int y){
+	do_click(strawID,MOUSE_RIGHT_BUTTON,0);
+	if ((x !=0) || (y != 0))
+		wait_move();
+	sleep(500);
+}
+
+/** ===============================================================================================
+
+						    .oO Planting of Grief and Sorrow  Oo.
+							
+   ===============================================================================================*/
+   
+void plant_field() {
+	int i = 0;
+	int j = 0;
+	for ( j = 0; j < FIELD_SIZE_Y; j++){
+		for( i = 0; i < FIELD_SIZE_X; i++){
+			int result = seed_one_tile(0, 0);
+			map_move_step(-1,0);
+			wait_move();
+			if(result){
+				if (is_inventory_empty()){
+					take_more_seeds_from_the_chest_and_come_back();
+				}
+			} else {
+				map_move_step(-1,0); wait_move();
+			}
+		}
+		map_move_step(FIELD_SIZE_X,0); wait_move();
+		map_move_step(0,1); wait_move();
+	}
+	
+	map_move_step(0,-FIELD_SIZE_Y);
+}
+
+int seed_one_tile(int x, int y){
+	int id = 0;
+	
+	id = find_map_object("flax", 2, x,y);
+	
+	if (!id) {
+		if (!DraggingItem)
+			take_seed();
+			
+		// сажаем
+		map_interact_click(x,y, NO_MOD);
+		// если сажаем под собой то никуда не побежим - просто ждем
+		if (x == 0 && y == 0)
+			sleep(500);
+		else
+			wait_move();
+		sleep(400);
+		if (DraggingItem){
+			drop_seed();
+			return 0;
+		}
+		return 1;
+	}
+	
+	if (x != 0 || y != 0) {
+		if (DraggingItem) {
+			drop_seed();
+		}
+    }
+	return 0;
+}
+
+
+void planting_is_needed() {
+	int i = 0;
+	int j = 0;
+	int id = 0;
+	int result = 1;
+	for (i = 0; i < FIELD_SIZE_X && result; i++) {
+		for(j = 0; j < FIELD_SIZE_Y && result; j++){
+			id = find_map_object("flax", 2, -i, j);
+			if(id){
+				result = 0;
+			}
+		}
+	}
+	return result;
+}
+
+/** ===============================================================================================
+
+						    .oO Plowing Oo.
+							
+   ===============================================================================================*/
+    
+void plough_field(){
+	int plowPlaceX = 0;
+	int plowPlaceY = 0;
+	// pick up plough
+	map_move_step(0,0);
+	sleep(100);
+	int myOldX = my_coord_x();
+	int myOldY = my_coord_y();
+	send_action("carry");
+	wait_chi_cursor();
+	do_click(PLOUGH_ID, MOUSE_LEFT_BUTTON, NO_MOD);
+	wait_move();
+	plowPlaceX = my_coord_x();
+	plowPlaceY = my_coord_y();
+	map_abs_click(myOldX, myOldY, MOUSE_RIGHT_BUTTON, NO_MOD);
+	wait_move();
+	
+	do_click(PLOUGH_ID, MOUSE_RIGHT_BUTTON, NO_MOD);
+	wait_dig_cursor();
+	sleep(1000);
+	do_plough(FIELD_SIZE_X,FIELD_SIZE_Y, myOldX, myOldY);
+	
+	sleep(500);
+	send_action("carry");
+	wait_chi_cursor();
+	do_click(PLOUGH_ID, MOUSE_LEFT_BUTTON, NO_MOD);
+	sleep(500);
+	map_abs_click(plowPlaceX, plowPlaceY, MOUSE_RIGHT_BUTTON, NO_MOD);
+	wait_move();
+	sleep(500);
+	map_abs_click(myOldX, myOldY, MOUSE_LEFT_BUTTON, NO_MOD);
+	wait_move();
+	sleep(500);
+	
+	
+}
+
+void do_plough(int size_x, int size_y, int startX, int startY){
+
+	int length_x = size_x-2;
+	int length_y = size_y-2;
+	
+	int count = 3;
+	
+	int currentAbsPosX = startX;
+	int currentAbsPosY = startY;
+	
+
+	while(true){
+	
+		map_abs_click( currentAbsPosX - length_x * 17,  currentAbsPosY, MOUSE_LEFT_BUTTON, NO_MOD);
+		currentAbsPosX = currentAbsPosX - length_x * 17;
+		wait_move();
+		count--;
+		if (count <= 0){
+			length_x--;
+			length_y--;
+			count = 3;
+		}
+		
+		if(length_x <= 0 || length_y <= 0){
+			break;
+		}
+		
+		map_abs_click(currentAbsPosX,  currentAbsPosY + length_y * 17, MOUSE_LEFT_BUTTON, NO_MOD);
+		currentAbsPosY = currentAbsPosY + length_y * 17;
+		wait_move();
+		count--;
+		if (count <= 0){
+			length_x--;
+			length_y--;
+			count = 3;
+		}
+		
+		if(length_x <= 0 || length_y <= 0){
+			break;
+		}
+		
+		
+		map_abs_click(currentAbsPosX + length_x * 17, currentAbsPosY, MOUSE_LEFT_BUTTON, NO_MOD);
+		currentAbsPosX = currentAbsPosX + length_x * 17;
+		wait_move();
+		count--;
+		if (count <= 0){
+			length_x--;
+			length_y--;
+			count = 3;
+		}
+		
+		if(length_x <= 0 || length_y <= 0){
+			break;
+		}
+			
+		map_abs_click(currentAbsPosX, currentAbsPosY - length_y*17, MOUSE_LEFT_BUTTON, NO_MOD);
+		currentAbsPosY = currentAbsPosY - length_y*17;
+		wait_move();
+		count--;
+		if (count <= 0){
+			length_x--;
+			length_y--;
+			count = 3;
+		}
+
+		if(length_x <= 0 || length_y <= 0){
+			break;
+		}
+	}
+}
+
+
+
+
+/** ===============================================================================================
+
+						    .oO Auxilary Functions Oo.
+							
+   ===============================================================================================*/
+
+
+
+void take_seed() {
+      // ищем нужное семечко
+      if (set_inventory("Inventory")) {
+         while (next_item()) {
+            // берем в руки нужное семечко из инвентаря
+            if (is_item_name("flaxseed")) {
+               seed_x = item_coord_x();
+               seed_y = item_coord_y();
+               item_click("take");
+               wait_drag();
+               break;
+            }
+         }
+      }
+}
+
+void drop_seed() {
+    item_drop_to_inventory("Inventory", seed_x, seed_y);
+    wait_drop();
+}
+
+int is_inventory_full(){
+	set_inventory("Inventory");
+	if(get_items_count() >= (INVENTORY_SIZE - 1)){
+		return true;
+	}
+	return false;
+}
+
+int is_inventory_empty(){
+	int count = 0;
+	set_inventory("Inventory");
+	while(next_item()){
+		  if (is_item_name("flaxseed")){
+			count++;
+		  }
+	}
+	
+	if (count){
+		return false;
+	}
+	return true;
+}
+
+void put_seeds_to_the_chest_and_come_back(){
+
+	int prev_x = my_coord_x();
+	int prev_y = my_coord_y();
+	
+	do_click(CHEST_ID, MOUSE_RIGHT_BUTTON, NO_MOD);
+    wait_move();
+	
+	// TODO: investigate
+	//throw_away_worst_half_of_inventory();
+	
+    set_inventory("Inventory");
+	
+	while (next_item()){
+        if (is_item_name("flaxseed")) {
+            item_click("transfer");
+            sleep(100);
+        }
+    }
+	
+	map_abs_click(prev_x, prev_y, MOUSE_LEFT_BUTTON, NO_MOD);
+	wait_move();
+}
+
+void put_fibres_to_the_chest_and_come_back(){
+	int prev_x = my_coord_x();
+	int prev_y = my_coord_y();
+	
+	do_click(CHEST_ID, MOUSE_RIGHT_BUTTON, NO_MOD);
+    wait_move();
+	
+    set_inventory("Inventory");
+	
+	while (next_item()){
+        if (is_item_name("flaxfibre")) {
+            item_click("transfer");
+            sleep(100);
+        }
+    }
+	
+	map_abs_click(prev_x, prev_y, MOUSE_LEFT_BUTTON, NO_MOD);
+	wait_move();
+}
+
+void take_more_seeds_from_the_chest_and_come_back(){
+	int prev_x = my_coord_x();
+	int prev_y = my_coord_y();
+	
+	do_click(CHEST_ID, MOUSE_RIGHT_BUTTON, NO_MOD);
+    wait_move();
+	
+	set_inventory("Inventory");
+	int capacity = INVENTORY_SIZE - get_items_count();
+	
+	set_inventory("Chest");
+	
+	
+	while (next_item()){
+        if (is_item_name("flaxseed")) {
+			if (capacity > 0){
+				item_click("transfer");
+				sleep(100);
+				capacity--;
+			}
+        }
+    }
+	
+	map_abs_click(prev_x, prev_y, MOUSE_LEFT_BUTTON, NO_MOD);
+	wait_move();
+}
+
+
+
+

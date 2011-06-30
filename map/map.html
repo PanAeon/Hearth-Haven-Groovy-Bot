@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>H&amp;H current session map</title>
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+<style type="text/css">
+	html { height: 100% }
+	body { height: 100%; margin: 0px; padding: 0px }
+	#map_canvas { height: 100% }
+</style>
+<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
+<script type="text/javascript">
+
+var currentSession = 0;
+
+function myProjection() {
+	var MAP_RANGE = 51200;
+	this.worldOrigin_ = new google.maps.Point(0, 0);
+	this.pixelsPerLonDegree_ = MAP_RANGE / 360;
+	this.pixelsPerLatDegree_ = MAP_RANGE / 180;
+};
+ 
+myProjection.prototype.fromLatLngToPoint = function(latLng) {
+	var origin = this.worldOrigin_;
+	var x = origin.x + latLng.lng() * this.pixelsPerLonDegree_;
+	var y = origin.y + latLng.lat() * this.pixelsPerLatDegree_;
+	return new google.maps.Point(x, y);
+};
+ 
+myProjection.prototype.fromPointToLatLng = function(point) {
+	var origin = this.worldOrigin_;
+	var lng = (point.x - origin.x) / this.pixelsPerLonDegree_;
+	var lat = (point.y - origin.y) / this.pixelsPerLatDegree_;
+	return new google.maps.LatLng(lat, lng);
+};
+
+function CoordMapType(tileSize) {
+	this.tileSize = tileSize;
+}
+
+CoordMapType.prototype.getTile = function(coord, zoom, ownerDocument) {
+	var div = ownerDocument.createElement('DIV');
+	div.innerHTML = coord;
+	div.style.width = this.tileSize.width + 'px';
+	div.style.height = this.tileSize.height + 'px';
+	div.style.fontSize = '16px';
+	div.style.borderStyle = 'solid';
+	div.style.borderWidth = '1px';
+	div.style.borderColor = 'yellow';
+	div.style.color = 'yellow';
+	return div;
+};
+
+function HomeControl(controlDiv, map) {
+	controlDiv.style.padding = '5px';
+	var controlUI = document.createElement('DIV');
+	controlUI.style.backgroundColor = 'white';
+	controlUI.style.borderStyle = 'solid';
+	controlUI.style.borderWidth = '2px';
+	controlUI.style.cursor = 'pointer';
+	controlUI.style.textAlign = 'center';
+	controlUI.title = 'Click to go to start point';
+	controlDiv.appendChild(controlUI);
+	var controlText = document.createElement('DIV');
+	controlText.style.fontFamily = 'Arial,sans-serif';
+	controlText.style.fontSize = '12px';
+	controlText.style.paddingLeft = '4px';
+	controlText.style.paddingRight = '4px';
+	controlText.innerHTML = 'Go to start point';
+	controlUI.appendChild(controlText);
+	google.maps.event.addDomListener(controlUI, 'click', function() {
+		map.setCenter(new google.maps.LatLng(0, 0))
+	});
+}
+
+function GridControl(controlDiv, map) {
+	controlDiv.style.padding = '5px';
+	var controlUI = document.createElement('DIV');
+	controlUI.style.backgroundColor = 'white';
+	controlUI.style.borderStyle = 'solid';
+	controlUI.style.borderWidth = '2px';
+	controlUI.style.cursor = 'pointer';
+	controlUI.style.textAlign = 'center';
+	controlUI.title = 'Click to show or hide grid';
+	controlDiv.appendChild(controlUI);
+	var controlText = document.createElement('DIV');
+	controlText.style.fontFamily = 'Arial,sans-serif';
+	controlText.style.fontSize = '12px';
+	controlText.style.paddingLeft = '4px';
+	controlText.style.paddingRight = '4px';
+	controlText.innerHTML = 'Show/Hide grid';
+	controlUI.appendChild(controlText);
+	google.maps.event.addDomListener(controlUI, 'click', function() {
+		if (map.overlayMapTypes.getLength()) {
+			map.overlayMapTypes.pop();
+		}
+		else {
+			map.overlayMapTypes.push(new CoordMapType(new google.maps.Size(100, 100)))
+		}
+	});
+}
+
+
+function initialize() {
+
+	var map;
+
+	var myMapType = new google.maps.ImageMapType({
+		tileSize: new google.maps.Size(100, 100),
+		minZoom: 9,
+		maxZoom: 9,
+		getTileUrl: function(coord, zoom) {
+			return currentSession + '/tile_' + coord.x + '_' + coord.y + '.png';
+		},
+		isPng: true
+	});
+
+	myMapType.projection = new myProjection();
+
+	var mapOptions = {
+		center: new google.maps.LatLng(0, 0),
+		mapTypeControl: false,
+		backgroundColor: '#E0C191',
+		zoom: 9
+	}
+
+	map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
+	map.mapTypes.set('myMapType', myMapType);
+	map.setMapTypeId('myMapType');
+
+	var homeControlDiv = document.createElement('DIV');
+	var homeControl = new HomeControl(homeControlDiv, map);
+	homeControlDiv.index = 1;
+	map.controls[google.maps.ControlPosition.TOP_RIGHT].push(homeControlDiv);
+	var gridControlDiv = document.createElement('DIV');
+	var gridControl = new GridControl(gridControlDiv, map);
+	gridControlDiv.index = 2;
+	map.controls[google.maps.ControlPosition.TOP_RIGHT].push(gridControlDiv);
+}
+
+</script>
+<script type="text/javascript" src="currentsession.js"></script>
+</head>
+<body onload="initialize()">
+	<div id="map_canvas" style="width:100%; height:100%"></div>
+</body>
+</html>

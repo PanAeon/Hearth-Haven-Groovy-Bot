@@ -1,0 +1,194 @@
+    #include <sys>
+
+    int myx; int myy;
+    int myx1; int myy1;
+    // топор
+    int axe_x = 1;
+    int axe_y = 0;
+
+
+    void main() {
+       myx = my_coord_x();
+       myy = my_coord_y();
+      movetree();
+    int id;
+       while (1) {
+          id = find_object_by_type("tree", 30);
+          if (id == 0) break;
+          check_stamina();
+            movetree();
+          process_tree(id);
+       }   
+       equip_axe();
+    }
+
+    void equip_shovel() {
+       set_item_equip(6);
+       if (is_item_name("axe")) {
+          equip(6, "take");
+          wait_drag();
+          item_drop_to_inventory("Inventory", axe_x, axe_y);
+          wait_drop();
+       }
+       set_item_equip(7);
+       if (is_item_name("axe")) {
+          equip(7, "take");
+          wait_drag();
+          item_drop_to_inventory("Inventory", axe_x, axe_y);
+          wait_drop();
+       }   
+       
+       set_item_equip(6);
+       if (!is_item_name("shovel")) {
+          inventory("Inventory", 0,0, "take");
+          wait_drag();
+          equip(6, "drop");
+          wait_drop();
+       }
+    }
+
+    void equip_axe() {
+       set_item_equip(6);
+       if (is_item_name("shovel")) {
+          // снимаем лопату
+          equip(6, "take");
+          wait_drag();
+          item_drop_to_inventory("Inventory", 0, 0);
+          wait_drop();
+       }
+       
+       set_item_equip(6);
+       if (!is_item_name("axe")) {
+          // берем топор
+          inventory("Inventory", axe_x,axe_y, "take");
+          wait_drag();
+          equip(6, "drop");
+          wait_drop();
+       }
+       
+    }
+
+
+    void check_stamina() {
+       int bucket_x;
+       int bucket_y;
+       if (Stamina > 90)  return 0;
+       if (set_inventory("Inventory")) {
+          while (next_item()) {
+             if (is_item_name("bucket-water")) {
+                bucket_x = item_coord_x();
+                bucket_y = item_coord_y();
+               
+                item_click("take");
+                wait_drag();
+                break;
+             }
+          }
+          reset_inventory();
+          while (next_item()) {
+             if (is_item_name("waterflask")) {
+                item_click("itemact");
+                sleep(500);
+                item_drop(bucket_x,bucket_y);
+                wait_drop();
+                item_click("iact");
+                wait_context_menu();
+                select_context_menu("Drink");
+                wait_hourglass();
+                break;
+             }
+          }
+       }
+    }
+
+
+    void chop(int tree) {
+       equip_axe();
+       do_click(tree, 3, 0);
+       wait_context_menu();
+       select_context_menu("Chop");
+       wait_hourglass();
+    }
+
+    void remove_stump() {
+       int stump = 0;
+
+       while (1) {
+          stump = find_object_by_name("stump", 5);
+          if (stump == 0) break;
+          check_stamina();
+          equip_shovel();
+                do_click(stump, 3, 0);
+          wait_context_menu();
+          select_context_menu("Remove");
+          wait_hourglass();   
+          if (DraggingItem) {
+             drop(0);
+             wait_drop();
+          }
+          if (set_inventory("Inventory")) {
+             while (next_item()) {
+                if (is_item_name("wood")) {
+                   item_click("drop");
+                }
+             }
+          }     
+       }
+    equip_axe();
+    }
+
+
+    void process_tree(int objid) {
+       movetree();
+       chop(objid);
+       remove_stump();
+       myx1 = my_coord_x();
+       myy1 = my_coord_y();
+       movetree();
+    }
+
+    void check {
+    stone = find_object_by_name("bumlings/03",3);
+         if (stone == 0){
+    map_move_step(3, 3)
+    }
+    }
+
+    void movetree() {
+    int log;
+    while(1){
+          log = find_object_by_name("trees/log", 15);
+         if (log == 0) break;
+         send_action("carry");
+          do_click(log, 1, 0);
+          wait_move();
+          send_action("theTrav","hearth");
+          sleep(2000);
+          map_click(1,1,3,0);
+          map_click(1,1,1,0);
+          wait_move();
+    log = find_object_by_name("trees/log", 15);
+          map_move(log, myx, myy)
+          map_abs_click(myx, myy, 1, 0);
+          wait_move();
+    }
+    }
+	
+	
+	
+	    void movetree() {
+    int log;
+    while(1){
+          log = find_object_by_name("trees/log", 15);
+         if (log == 0) break;
+         send_action("carry");
+          do_click(log, 1, 0);
+          wait_move();
+          send_action("theTrav","hearth");
+          sleep(2000);
+          map_click(1,1,3,0);
+          wait_move();
+          map_abs_click(myx, myy, 1, 0);
+          wait_move();
+    }
+    }

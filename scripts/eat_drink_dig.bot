@@ -1,0 +1,182 @@
+int MOUSE_RIGHT_BUTTON = 3;
+int MOUSE_LEFT_BUTTON = 1;
+int NO_MOD = 0;
+
+// script working))
+// Inventory should be open, though
+void main(){
+	while(1) {
+		if (Hungry < 82){
+			
+			open_lchest();
+			while(Hungry < 94) {
+				eat_from_lchest();
+			}
+			
+		}
+		 while(Stamina > 30){
+			  dig_current_tile();
+		  }
+		  clear_cursor();
+		  drink_water();
+	}
+}
+
+
+
+void open_lchest(){
+	int lchestID = find_object_by_name("lchest", 2);
+	do_click(lchestID, MOUSE_RIGHT_BUTTON, NO_MOD);
+	sleep(1000);
+}
+
+void eat_from_lchest(){
+	set_inventory("Chest");
+	while(next_item()){
+		item_click("iact");
+		wait_for_context_menu();
+		select_context_menu("Eat");
+		wait_for_HourGlass();
+		sleep(300);
+		break;
+		
+	}
+	sleep(1000);
+}
+
+void go_back(){
+	int doorID = find_object_by_name("cabin-door2m",10);
+	do_click(doorID, MOUSE_RIGHT_BUTTON, NO_MOD);
+	wait_for_move();
+	sleep(1000);
+	
+	map_move_step(0,1);
+	wait_for_move();
+	map_move_step(9,0);
+	wait_for_move();
+	map_move_step(0,-8);
+	wait_for_move();
+	map_move_step(3, 0);
+	wait_for_move();
+}
+int eat_from_cupboard(){
+	set_inventory("Cupboard");
+	while(next_item()){
+		item_click("iact");
+		wait_for_context_menu();
+		select_context_menu("Eat");
+		wait_for_HourGlass();
+		sleep(300);
+		break;
+		
+	}
+	sleep(1000);
+}
+
+void sit_on_chair(){
+    // not used!!!!
+	int chairID = find_object_by_name("chair",2);
+	do_click(chairID, MOUSE_RIGHT_BUTTON, NO_MOD);
+	sleep(1000);
+	int tableID = find_object_by_name("table",2);
+	do_click(tableID, MOUSE_RIGHT_BUTTON, NO_MOD);
+	sleep(1000);
+}
+void go_to_cupboard(){
+	map_move_step(-3, 0);
+	wait_for_move();
+	map_move_step(0,8);
+	wait_for_move();
+	map_move_step(-9,0);
+	wait_for_move();
+	int doorID = find_object_by_name("cabin-door2m",3);
+	do_click(doorID, MOUSE_RIGHT_BUTTON, NO_MOD);
+	wait_for_move();
+	sleep(100);
+	map_move_step(0, -4);
+	wait_for_move();
+	map_move_step(1, 0);
+	wait_for_move();
+	
+	int cupboardID = find_object_by_name("cupboard", 2);
+	do_click(cupboardID, MOUSE_RIGHT_BUTTON, NO_MOD);
+	sleep(1000);
+}
+
+
+void wait_for_move(){
+	sleep(500);
+	while(Moving){
+		sleep(10);
+	}
+}
+
+/*************************************************************************************/
+
+
+
+/*************************************************************************************/
+
+void dig_current_tile(){
+	do{
+		send_action("plow");
+		sleep(100);
+	} while(!is_cursor("dig"));
+	
+	int x = my_coord_x();
+	int y = my_coord_y();
+	map_abs_click(x, y, MOUSE_LEFT_BUTTON, 0);
+	wait_for_HourGlass();
+}
+
+void wait_for_HourGlass(){
+	do {
+		sleep(100);
+	}while(HourGlass);
+}
+
+void clear_cursor(){
+	map_click(25, 50, MOUSE_RIGHT_BUTTON, 0);
+}
+
+void drink_water(){
+
+	// int isInventoryOpen = have_inventory("Inventory");
+	// if (!isInventoryOpen){
+		// open_inventory();
+	// }
+	set_inventory("Inventory");
+
+	do{
+		if(is_item_name("waterflask")){
+			item_click("take");
+			sleep(100);
+			map_interact_click(find_Well_ID(), 0);
+			sleep(5000);
+			item_drop(0, 0);
+			sleep(200);
+			break;
+		}
+	} while(next_item());
+	
+	set_inventory("Inventory");
+
+	do{
+		if(is_item_name("waterflask")){
+			item_click("iact");
+			wait_for_context_menu();
+			select_context_menu("Drink");
+			wait_for_HourGlass();
+		}
+	} while(next_item());
+}
+
+int find_Well_ID(){
+	return find_object_by_name("well",5);
+}
+
+void wait_for_context_menu(){
+	do{
+		sleep(25);
+	}while(!ContextMenuReady);
+}

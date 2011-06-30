@@ -1,0 +1,29 @@
+void plant_the_best(){
+   int max_q = 0;
+   int s_x;
+   int s_y;
+   if (set_inventory("Inventory")) {
+
+      while (next_item()) {
+         if (is_item_name("carrot") || is_item_name("pea") || is_item_name("seed")) {         // Õ¿«¬¿Õ»≈ —≈ÃﬂÕ
+            if(max_q < item_quality()){
+               max_q = item_quality();
+               s_x = item_coord_x();
+               s_y = item_coord_y();
+            }
+         }
+      }
+      inventory("Inventory", s_x, s_y, "take");
+      while (!DraggingItem) sleep(100);
+      map_interact_click(0, 0, 0);
+      sleep(2000);
+      while (DraggingItem){
+         send_action("plow");                  // PLOW
+         wait_dig_cursor();
+         map_click (0, 0, 1, 0);
+         wait_hourglass();
+         map_interact_click(0, 0, 0);
+         sleep(500);
+      }
+   }
+}

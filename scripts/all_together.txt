@@ -1,0 +1,402 @@
+#include <sys>
+
+int height = 8;
+int myx;
+int myy;
+int bar1;
+int bar2;
+int bar1_full = 0;
+int bar2_full = 0;
+int boat;
+
+int plow;
+int seed_x;
+int seed_y;
+
+int flower_stage = 3;
+int is_grass = 1;
+
+// сбросить курсор в дефолтовый
+void reset_cursor() {
+   if (!is_cursor("arw")) {
+      map_click(0,0,3,0);
+      wait_arw_cursor();
+   }
+}
+
+void take_seed() {
+      // ищем нужное семечко
+      if (set_inventory("Inventory")) {
+         while (next_item()) {
+            // берем в руки нужное семечко из инвентаря
+            if (is_item_name("flaxseed")) {
+               seed_x = item_coord_x();
+               seed_y = item_coord_y();
+               item_click("take");
+               wait_drag();
+               break;
+            }
+         }
+      }
+}
+
+void drop_seed() {
+            item_drop_to_inventory("Inventory", seed_x, seed_y);
+            wait_drop();
+}
+
+void process_harvest_tile(int x, int y) {
+   int id;
+   int stage;
+   int processed = 0;
+   id = find_map_object("", 2, x,y);
+   if (id > 0) {
+      stage = get_object_blob(id, 0);
+      if (stage >= flower_stage) {
+         processed = 1;
+         if (!is_cursor("harvest")) {
+            send_action("harvest");
+            wait_harvest_cursor();
+         }
+         // собираем урожай
+         do_click(id, 1, 0);
+         if ((x !=0) || (y != 0))
+            wait_move();
+         wait_hourglass();
+      }
+   }
+   if ( (!processed) && ((x !=0) || (y != 0)) ) {
+      reset_cursor();
+      map_move_step(x,y);
+      wait_move();
+   }
+}
+
+void process_seed_tile(int x, int y) {
+   if (is_grass) {
+      if (!is_cursor("dig")) {
+         send_action("grass");
+         wait_dig_cursor();
+      }
+   }
+   int id = 0;// find_map_object("flax", 2, x,y);
+   // если в нужном тайле ниче не растет - нужно засадить
+   if (id == 0) {
+      // если в руках ничего нет
+      if (!DraggingItem)
+         take_seed();
+      // сажаем
+      map_interact_click(x,y,1);
+      // если сажаем под собой то никуда не побежим - просто ждем
+      if (x == 0 && y == 0)
+         sleep(700);
+      else
+         wait_move();
+      map_click(0,0,1,0); sleep(300);
+   } else {
+      if (x != 0 || y != 0) {
+         // бросаем семечко в инвентарь
+         if (DraggingItem) {
+            drop_seed();
+         }
+         map_move_step(x,y);
+         wait_move();
+      }
+   }
+}
+
+// собрать урожай
+void harvest() {
+   int i;
+   
+   process_harvest_tile(0,0);
+   for (i = 0; i<(height-1); i++) {
+      process_harvest_tile(0,1);
+   }
+   process_harvest_tile(1,0);
+   for (i = 0; i<(height-1); i++) {
+      process_harvest_tile(0,-1);
+   }
+   reset_cursor();
+   map_move_step(-1,0); wait_move();
+}
+
+// посадить семена
+void seed() {
+   int i;
+   
+   process_seed_tile(0,0);   
+   for (i=0; i<(height-1); i++) {
+      process_seed_tile(0,1);
+   }
+   process_seed_tile(1,0);
+   for (i=0; i<(height-1); i++) {
+      process_seed_tile(0,-1);
+   }
+   
+   // бросаем семечко в инвентарь
+   if (DraggingItem) {
+      item_drop_to_inventory("Inventory", seed_x, seed_y);
+      wait_drop();
+   }
+   reset_cursor();
+}
+
+void plow_block() {
+   do_click(plow, 3, 0);
+   wait_move();
+   wait_dig_cursor();
+   
+   map_move(plow, 0, (height-1)*11); wait_move();
+   map_move(plow, 11, 0); wait_move();   
+   map_move(plow, 0, -(height-1)*11); wait_move();
+   map_move(plow, 11, 0); wait_move();
+   reset_cursor();
+   map_move_step(-1,0); wait_move();
+}
+
+void fill_barrel() {
+   int is_empty = 0;
+   int time = 0;
+   int x;
+   int y;
+   
+   bar1 = input_get_object("Select water 1");
+   bar2 = input_get_object("Select water 2");
+   
+   if (set_inventory("Inventory")) {
+      while (next_item()) {
+         if (is_item_name("bucket")) {
+            if (is_item_tooltip("Empty")) is_empty = 1;
+            x = item_coord_x();
+            y = item_coord_y();
+            item_click("take");
+            wait_drag();
+            break;
+         }
+      }
+   }
+   while (!bar1_full) {
+      // если пустое ведро - наполняем водой
+      if (is_empty) {
+         map_abs_interact_click(myx, myy, 0);
+         set_item_drag();
+         while (is_item_name("buckete")) sleep(100);
+      }
+      
+      map_interact_click(bar1, 0);
+      time = 0;
+      while(!Moving) {
+         // ждем 1 секунду
+         sleep(100);
+         time = time + 100;
+         if (time > 1000) {
+            // значит бочка пустая 
+            bar1_full = 1;
+            break;
+         }
+      }
+      if (bar1_full) break;
+      while (1) {
+         wait_end_move();
+         sleep(300);
+         if (!Moving) break;
+      }
+      is_empty = 1;
+   }
+   
+   if (DraggingItem) {
+      item_drop_to_inventory("Inventory", x,y);
+      wait_drop();
+   }
+   map_abs_click(myx, myy, 1, 0);
+   wait_move();
+   
+   
+   if (set_inventory("Inventory")) {
+      while (next_item()) {
+         if (is_item_name("bucket")) {
+            if (is_item_tooltip("Empty")) is_empty = 1;
+            x = item_coord_x();
+            y = item_coord_y();
+            item_click("take");
+            wait_drag();
+            break;
+         }
+      }
+   }
+   while (!bar2_full) {
+      // если пустое ведро - наполняем водой
+      if (is_empty) {
+         map_abs_interact_click(myx, myy, 0);
+         set_item_drag();
+         while (is_item_name("buckete")) sleep(100);
+      }
+      
+      map_interact_click(bar2, 0);
+      time = 0;
+      while(!Moving) {
+         // ждем 1 секунду
+         sleep(100);
+         time = time + 100;
+         if (time > 1000) {
+            // значит бочка пустая 
+            bar2_full = 1;
+            break;
+         }
+      }
+      if (bar2_full) break;
+      while (1) {
+         wait_end_move();
+         sleep(300);
+         if (!Moving) break;
+      }
+      is_empty = 1;
+   }
+   
+   if (DraggingItem) {
+      item_drop_to_inventory("Inventory", x,y);
+      wait_drop();
+   }
+}
+
+// проверить стамину и если надо выпить воды из ведра
+void check_stamina() {
+   int bucket_x;
+   int bucket_y;
+   // проверяем стамину
+   if (Stamina > 75)  return 0;
+   // если мой инвентарь открыт
+   if (set_inventory("Inventory")) {
+      // ищем ведро с водой
+      while (next_item()) {
+         if (is_item_name("bucket-water")) {
+            bucket_x = item_coord_x();
+            bucket_y = item_coord_y();
+            
+            // берем в руки
+            item_click("take");
+            // ждем пока не возьмеца в руки
+            wait_drag();
+            break;
+         }
+      }
+      // нужно искать по новой
+      reset_inventory();
+      // ищем фляжку
+      while (next_item()) {
+         if (is_item_name("waterflask")) {
+            // наполняем ее водой из ведра
+            item_click("itemact");
+            sleep(500);
+            // кладем откуда взяли
+            item_drop(bucket_x,bucket_y);
+            // ждем пока положится
+            wait_drop();
+            // вызываем конекстное меню у фляжки
+            item_click("iact");
+            // ждем его
+            wait_context_menu();
+            // выбираем пить
+            select_context_menu("Drink");
+            // ждем когда полностью напьеца
+            wait_hourglass();
+            // выходим из поиска
+            break;
+         }
+      }
+   }
+}
+
+void fill_food() {
+   int id = input_get_object("Select food");
+   take_seed();
+   map_interact_click(id,1);
+   wait_move();
+   
+   while (1) {
+      map_interact_click(id,1);
+      sleep(300);
+   }
+}
+
+void take_fibres() {
+   int i;
+   int id;
+   for (i=0; i<16; i++) {
+      id = find_map_object("flaxfibre", 2, 0,1);
+      if (id > 0) {
+         do_click(id,3,0);
+         sleep(800);
+      } else {
+         map_move_step(0,1);
+         wait_move();
+      }
+   }
+   
+   send_action("bp", "htable");
+   sleep(500);
+   map_place(0,2,1,0);
+   while (!BuildReady) sleep(100);
+   int i;
+   for (i=0; i<8; i++) {
+      if (set_inventory("Inventory")) {
+         while (next_item()) {
+            if (is_item_name("flaxfibre")) {
+               item_click("transfer");
+               sleep(500);
+               break;
+            }
+         }
+      }
+   }
+   map_move_step(0,-1); wait_move();
+   send_action("bp", "htable");
+   sleep(500);
+   map_place(0,1,1,0);
+   while (!BuildReady) sleep(100);
+   int i;
+   for (i=0; i<8; i++) {
+      if (set_inventory("Inventory")) {
+         while (next_item()) {
+            if (is_item_name("flaxfibre")) {
+               item_click("transfer");
+               sleep(500);
+               break;
+            }
+         }
+      }
+   }
+   map_move_step(1,-16);
+   wait_move();
+}
+
+void main() {
+   if (!have_inventory("Inventory")) {
+      open_inventory();
+      while (!have_inventory("Inventory")) sleep(300);
+   }
+   // запоминаем где я стою
+   myx = my_coord_x();
+   myy = my_coord_y();
+   
+   
+   // наполнить бочки водой 
+   fill_barrel();
+   
+   //fill_food();
+   // while (1) {
+      // map_click(0,-1,1,0); 
+      // wait_move();
+   // }
+   
+   //take_fibres();
+   // plow = input_get_object("Select plow");
+   // while (1) {
+      // check_stamina();
+      // //plow_block();
+      // //harvest();
+      // seed();
+   // }
+   
+}

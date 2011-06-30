@@ -1,0 +1,89 @@
+    int randomSeed = my_coord_x(); /* рэндомное начало отсчЄта берЄтс€ из координаты */
+    int randomUp = 0; /* переменные, необходимые дл€ рэндома */
+    int infinity = 9999999; /* нужно, когда делим на ноль */
+
+    int rnd( int a, int b ){ /* функци€ рэндома в промежутке от a до b включительно [a Ч b] */
+       randomUp++;
+       randomUp = mod( randomUp, 32768 );
+       randomSeed = abs( randomSeed + my_coord_x() - my_coord_x() + randomUp );
+       randomSeed = mod( randomSeed, 32768 );
+       int delta = b - a + 1;
+       return mod( randomSeed, delta ) + a;
+
+    }
+    int abs( int n ){ /* модуль */
+       if( n < 0 ) return -n;
+       return n;
+    }
+    int mod( int a, int b ){ /* остаток от делени€ (16 mod 3 = 1 ) a Ч делимое, b Ч делитель */
+       if( b == 0 ) return 0;
+       return a - a / b * b;
+    }
+    int pow2( int num ){ /* возводит число в степень 2 */
+       return num * num;
+    }
+    int pow( int num, int exp ){ /* возводит число num в степень exp */
+       int out = num;
+       for( int a = 1;a < exp; a++ ){
+          out = out * num;
+       }
+       return out;
+    }
+    int sqrt( int n ){ /* квадратный корень */
+       if( n < 0 ) return 0;
+       int xn = 1;
+       int xn1 = ( xn + n / xn ) / 2;
+       while( abs( xn1 - xn ) > 1 ){
+          xn = xn1;
+          xn1 = ( xn + n / xn ) / 2;
+       }
+       while( ( xn1 * xn1 ) > n ){
+          xn1--;
+       }
+       return xn1;
+    }
+
+    /* trigonometry */
+    /*      */
+    /* тригонометрические функции работают с числами, умноженными на 10000, */
+    /* это св€зано с целочисленностью арифметики */
+
+    int normalizeAngel( int a ){ /* «агон€ет угол в [0 - 359] */
+       int moda = mod( a, 360 );
+       if( moda < 0 ) return 360 + moda;
+       return moda;
+    }
+    int deg2rad( int x ){ /* переводит градусы в радианы ( домножение на 10000 ) */
+       return x * 31415 / 180;
+    }
+    int rad2deg( int x ){ /* переводит радианы в градусы. Ќа вход число умноженное на 10000! */
+       return x * 180 / 31415;
+    }
+    int sin( int num ){ /* синус угла. ”гол в градусах, итоговое число выходит умноженным на 10000 */
+       int xNormal = normalizeAngel( num );
+       int x = xNormal;
+       if( x > 180 ) x = x - 180;
+       if( x >= 90 && x <= 180 ) x = abs( 180 - x );
+       x = deg2rad( x );
+       int x2 = x * x / 10000;
+       int x3 = x2 * x / 10000;
+       int x5 = x3 * x2 / 10000;
+       int result = x - x3 / 6 + x5 / 120 - (x5 * x2 / 10000) / 5040;
+       if( xNormal > 180 ) return -result;
+       return result;
+    }
+    int cos( int x ){ /* косинус угла. ”гол в градусах, итоговое число выходит умноженным на 10000 */
+       return sin( x + 90 );
+    }
+    int tan( int x ){ /* тангенс угла, итоговое число выходит умноженным на 10000 */
+       int cosx = cos( x );
+       if( cosx == 0 ) return infinity;
+       return sin( x ) * 10000 / cosx;
+    }
+    int arctan( int num ){ /* арктангенс. !Ќа вход! подаЄтс€ число умноженное на 10000, на выходе Ч угол */
+    /* возвращает нормальные углы в диапазоне [0 - 10000] дальше полином расходитс€ */
+       int x = -num;
+       int x2 = x * x / 10000;
+       int result = rad2deg((503 * (-69888 + x) / 10000) * ((x) * (28444 + 8263 * x / 10000 + x2) / 10000) / (10000 + 1471 * x / 10000 + 6444 * x2 / 10000));
+       return result;
+    }
